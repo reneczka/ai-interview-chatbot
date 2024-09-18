@@ -164,7 +164,4 @@ cython_debug/
 tmp.py
 .DS_Store
 .vscode/
-tmp.py
-tmp2.py
-tmp3.py
-tmp4.py
+tmp*.py
