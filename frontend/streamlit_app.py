@@ -5,6 +5,7 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 
 st.set_page_config(layout="wide")
 st.title("Jobs and Technologies Table")
+st.write("Select a job and click Start Interview button.")
 
 response = requests.get("http://localhost:8000/jobs/")
 
@@ -15,25 +16,26 @@ if response.status_code == 200:
     
     df['Technologies'] = df['technologies'].apply(lambda techs: ', '.join([f"{tech['tech']} - {tech['level']}" for tech in techs]))
     
-    df = df.drop(columns=['technologies', 'id'])
+    df = df.drop(columns=['technologies'])
     columns_order = ['job_name', 'company_name', 'Technologies', 'job_location', 'salary', 'type_of_work', 
                      'experience', 'employment_type', 'operating_mode', 'job_description', 
                      'job_url']
-    df = df[columns_order]
+
+    df_display = df[columns_order]
     
-    df.columns = ['Job Name', 'Company', 'Technologies', 'Location', 'Salary', 'Type of Work', 
+    df_display.columns = ['Job Name', 'Company', 'Technologies', 'Location', 'Salary', 'Type of Work', 
                   'Experience', 'Employment Type', 'Operating Mode', 'Job Description', 
                   'Job URL']
 
-    gb = GridOptionsBuilder.from_dataframe(df)
-    gb.configure_selection('single', use_checkbox=True, groupSelectsChildren=False, groupSelectsFiltered=False)
-    gb.configure_grid_options(domLayout='normal')
+    gb = GridOptionsBuilder.from_dataframe(df_display)
+
+    gb.configure_selection('single', use_checkbox=True, groupSelectsChildren=False)
+    gb.configure_column("Job Name", checkboxSelection=True)
+
     gridOptions = gb.build()
 
-    
-
     grid_response = AgGrid(
-        df,
+        df_display,
         gridOptions=gridOptions,
         data_return_mode='AS_INPUT', 
         update_mode='MODEL_CHANGED', 
@@ -45,38 +47,24 @@ if response.status_code == 200:
         reload_data=False
     )
 
-    st.button("Start Interview", type="primary", )
-
     selected = grid_response['selected_rows']
-    
-    st.write("Selected:", selected)
 
-    # if isinstance(selected, pd.DataFrame):
-    #     if not selected.empty:
-    #         if len(selected) == 1:
-    #             st.write("Selected Job for Interview:")
-    #             selected_job = selected.iloc[0].to_dict()
-    #             st.json(selected_job)
-    #         else:
-    #             st.warning("Please select only one job for the interview.")
-    #     else:
-    #         st.write("No job selected for interview.")
-    # elif isinstance(selected, list):
-    #     if len(selected) > 0:
-    #         if len(selected) == 1:
-    #             st.write("Selected Job for Interview:")
-    #             selected_job = selected[0]
-    #             st.json(selected_job)
-    #         else:
-    #             st.warning("Please select only one job for the interview.")
-    #     else:
-    #         st.write("No job selected for interview.")
-    # else:
-    #     st.error("Unexpected type for selected rows. Please check the AgGrid configuration.")
-    #     # st.write("Type of selected:", type(selected))
+    if selected is not None and not selected.empty:
+        selected_row = selected.iloc[0]
+        print(f"# # # # # # # # # # # #{selected_row}")
+
+        selected_index = df[df['job_name'] == selected_row['Job Name']].index[0]
+        selected_id = df.loc[selected_index, 'id']
+        
+        st.write(f"Selected Job ID: {selected_id}")
+        st.write(f"Selected Job Name: {selected_row['Job Name']}")
+
+    st.write("Selected:", selected)
+    st.button("Start Interview", type="primary", disabled=selected.empty if selected is not None else True)
 
 else:
     st.error(f"Failed to fetch data from the API. Status code: {response.status_code}")
     st.write("Response content:", response.text)
+
 
 # streamlit run streamlit_app.py
