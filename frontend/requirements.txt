@@ -1,0 +1,5 @@
+python=3.11.9=h932a869_0_cpython
+pandas=2.2.3=py311h9cb3ce9_1
+requests=2.32.3=pyhd8ed1ab_0
+streamlit=1.38.0=pyhd8ed1ab_0
+streamlit-aggrid=1.0.5=pypi_0
