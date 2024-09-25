@@ -7,10 +7,8 @@ st.set_page_config(layout="wide")
 st.title("Jobs and Technologies Table")
 st.write("Select a job and click Start Interview button.")
 
-jobs_endpoint_response = requests.get("http://localhost:8000/jobs/")
-
-def start_interview():
-    print(f"Sprawdzam czy dziala klik {selected_id}")
+selected_id = None
+user_message = ""
 
 def send_user_answer_to_backend_and_get_ai_response(selected_job_id, user_msg):
     response = requests.post(
@@ -18,6 +16,23 @@ def send_user_answer_to_backend_and_get_ai_response(selected_job_id, user_msg):
                 json={"job_id": selected_job_id, "user_message": user_msg}
             )
     return response.json()
+
+def append_messages_to_state_and_call_backend(job_id, user_msg):
+    if user_msg:
+        st.session_state.messages.append({"role": "user", "content": user_msg})
+    # ai_message = send_user_answer_to_backend_and_get_ai_response().json()
+    response = send_user_answer_to_backend_and_get_ai_response(job_id, user_msg)
+    ai_messages = response["ai_messages"]
+    for ai_message in ai_messages:
+        st.session_state.messages.append({"role": "assistant", "content": ai_message})
+
+def start_interview():
+    append_messages_to_state_and_call_backend(selected_id, "")
+
+
+
+
+jobs_endpoint_response = requests.get("http://localhost:8000/jobs/")
 
 if jobs_endpoint_response.status_code == 200:
     jobs_data = jobs_endpoint_response.json()
@@ -70,7 +85,6 @@ if jobs_endpoint_response.status_code == 200:
         selected_index = df_original_with_id.index[matching_rows].tolist()[0]
 
         # Retrieve the unique identifier 'id' using the obtained index
-        global selected_id
         selected_id = int(df_original_with_id.loc[selected_index, 'id'])
         
         st.write(f"Selected Job ID: {selected_id}")
@@ -90,15 +104,18 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 did_user_select_job_id = 'selected_id' in globals()
+
+
+def submit_prompt():
+    print("#############", selected_id, user_message)
+    if selected_id:
+        append_messages_to_state_and_call_backend(selected_id, user_message)
+
+# user_message = st.chat_input("Answer the question", disabled=not did_user_select_job_id, on_submit=submit_prompt)
 user_message = st.chat_input("Answer the question", disabled=not did_user_select_job_id)
 
 if user_message:
-    st.session_state.messages.append({"role": "user", "content": user_message})
-    # ai_message = send_user_answer_to_backend_and_get_ai_response().json()
-    response = send_user_answer_to_backend_and_get_ai_response(selected_id, user_message)
-    ai_messages = response["ai_messages"]
-    for ai_message in ai_messages:
-        st.session_state.messages.append({"role": "assistant", "content": ai_message})
+    submit_prompt()
 
 for ai_message in st.session_state.messages:
     with st.chat_message(ai_message["role"]):

@@ -122,7 +122,7 @@ def get_job_details(job_id: int, db: Session) -> models.Job:
 def process_message(message: InterviewRequest, db: Session = Depends(get_db)) -> InterviewResponse:
     state = interview_states.get(message.job_id)
 
-    if not state or not message.user_message:
+    if not message.user_message:
         if state and state.interview_ended:
             return InterviewResponse(ai_messages=[farewell_message], interview_ended=True)
 
@@ -145,7 +145,7 @@ def process_message(message: InterviewRequest, db: Session = Depends(get_db)) ->
     interview_history = state.get_interview_history()
 
     if state.question_count < max_questions:
-        ai_response = ai.generate_evaluation_and_next_question(state.job, message.job_id, interview_history)
+        ai_response = ai.generate_evaluation_and_next_question(interview_history)
         state.add_message("assistant", ai_response)
         state.question_count += 1
         return InterviewResponse(ai_messages=[ai_response])
