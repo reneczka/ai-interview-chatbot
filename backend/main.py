@@ -19,7 +19,7 @@ farewell_message = 'Thank you for participating in the interview. We wish you th
 max_questions = 3
 
 
-class Message(BaseModel):
+class InterviewRequest(BaseModel):
     job_id: int
     user_message: Optional[str] = None
 
@@ -119,10 +119,10 @@ def get_job_details(job_id: int, db: Session) -> models.Job:
     return job
 
 @app.post("/message/")
-def process_message(message: Message, db: Session = Depends(get_db)) -> InterviewResponse:
+def process_message(message: InterviewRequest, db: Session = Depends(get_db)) -> InterviewResponse:
     state = interview_states.get(message.job_id)
 
-    if not message.user_message:
+    if not state or not message.user_message:
         if state and state.interview_ended:
             return InterviewResponse(ai_messages=[farewell_message], interview_ended=True)
 
@@ -130,7 +130,7 @@ def process_message(message: Message, db: Session = Depends(get_db)) -> Intervie
         state = InterviewState(job)
         interview_states[message.job_id] = state
 
-        first_question = ai.generate_first_question(job, message.job_id, state.get_interview_history())
+        first_question = ai.generate_first_question(state.get_interview_history())
         state.add_message("assistant", first_question)
         state.question_count += 1
 
@@ -138,7 +138,7 @@ def process_message(message: Message, db: Session = Depends(get_db)) -> Intervie
 
         return InterviewResponse(ai_messages=[formatted_welcome, first_question])
 
-    if not state or state.interview_ended:
+    if state.interview_ended:
         raise HTTPException(status_code=400, detail="Invalid interview state")
 
     state.add_message("user", message.user_message)
@@ -150,7 +150,7 @@ def process_message(message: Message, db: Session = Depends(get_db)) -> Intervie
         state.question_count += 1
         return InterviewResponse(ai_messages=[ai_response])
     else:
-        final_evaluation = ai.generate_final_evaluation(state.job, message.job_id, interview_history)
+        final_evaluation = ai.generate_final_evaluation(interview_history)
         state.add_message("assistant", final_evaluation)
         state.interview_ended = True
         return InterviewResponse(ai_messages=[final_evaluation, farewell_message], interview_ended=True)
