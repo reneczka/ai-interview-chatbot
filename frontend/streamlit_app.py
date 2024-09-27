@@ -1,62 +1,45 @@
 import streamlit as st
-import requests
 import pandas as pd
 from st_aggrid import AgGrid, GridOptionsBuilder
+from api_utils import fetch_jobs_data, send_message
+from config import JOBS_ENDPOINT, MESSAGE_ENDPOINT
 
-st.set_page_config(layout="wide")
-st.title("Jobs and Technologies Table")
-st.write("Select a job and click Start Interview button.")
+def init_page():
+    st.set_page_config(layout="wide")
+    st.title("Jobs and Technologies Table")
+    st.write("Select a job and click Start Interview button.")
 
-selected_id = None
-user_message = ""
-
-def send_user_answer_to_backend_and_get_ai_response(selected_job_id, user_msg):
-    response = requests.post(
-                "http://localhost:8000/message/",
-                json={"job_id": selected_job_id, "user_message": user_msg}
-            )
-    return response.json()
-
-def append_messages_to_state_and_call_backend(job_id, user_msg):
+def update_chat(job_id, user_msg):
     if user_msg:
         st.session_state.messages.append({"role": "user", "content": user_msg})
-    # ai_message = send_user_answer_to_backend_and_get_ai_response().json()
-    response = send_user_answer_to_backend_and_get_ai_response(job_id, user_msg)
+    response = send_message(MESSAGE_ENDPOINT, job_id, user_msg)
     ai_messages = response["ai_messages"]
     for ai_message in ai_messages:
         st.session_state.messages.append({"role": "assistant", "content": ai_message})
 
 def start_interview():
-    append_messages_to_state_and_call_backend(selected_id, "")
+    update_chat(st.session_state.selected_id, "")
+
+def process_jobs_data(jobs_data):
+    df = pd.DataFrame(jobs_data)
+    df['Technologies'] = df['technologies'].apply(lambda techs: ', '.join([f"{tech['tech']} - {tech['level']}" for tech in techs]))
+    df = df.drop(columns=['technologies'])
+    return df
 
 
-
-
-jobs_endpoint_response = requests.get("http://localhost:8000/jobs/")
-
-if jobs_endpoint_response.status_code == 200:
-    jobs_data = jobs_endpoint_response.json()
-    
-    df_original_with_id = pd.DataFrame(jobs_data)
-    
-    df_original_with_id['Technologies'] = df_original_with_id['technologies'].apply(lambda techs: ', '.join([f"{tech['tech']} - {tech['level']}" for tech in techs]))
-    
-    df_original_with_id = df_original_with_id.drop(columns=['technologies'])
+def display_jobs_grid(df):
     columns_order = ['job_name', 'company_name', 'Technologies', 'job_location', 'salary', 'type_of_work', 
                      'experience', 'employment_type', 'operating_mode', 'job_description', 
                      'job_url']
+    df_display = df[columns_order]
 
-    df_display = df_original_with_id[columns_order]
-    
     df_display.columns = ['Job Name', 'Company', 'Technologies', 'Location', 'Salary', 'Type of Work', 
                   'Experience', 'Employment Type', 'Operating Mode', 'Job Description', 
                   'Job URL']
 
     gb = GridOptionsBuilder.from_dataframe(df_display)
-
     gb.configure_selection('single', use_checkbox=True, groupSelectsChildren=False)
     gb.configure_column("Job Name", checkboxSelection=True)
-
     gridOptions = gb.build()
 
     grid_response = AgGrid(
@@ -76,52 +59,48 @@ if jobs_endpoint_response.status_code == 200:
 
     if selected is not None and not selected.empty:
         selected_row = selected.iloc[0]
-        
-        # Find the job name of the selected row
         target_job_name = selected_row['Job Name']
-
-        # Find the index in the original DataFrame where the job name matches
-        matching_rows = df_original_with_id['job_name'] == target_job_name
-        selected_index = df_original_with_id.index[matching_rows].tolist()[0]
-
-        # Retrieve the unique identifier 'id' using the obtained index
-        selected_id = int(df_original_with_id.loc[selected_index, 'id'])
+        matching_rows = df['job_name'] == target_job_name
+        selected_index = df.index[matching_rows].tolist()[0]
+        st.session_state.selected_id = int(df.loc[selected_index, 'id'])
         
-        st.write(f"Selected Job ID: {selected_id}")
+        st.write(f"Selected Job ID: {st.session_state.selected_id}")
         st.write(f"Selected Job Name: {selected_row['Job Name']}")
-
 
     st.write("Selected:", selected)
     st.button("Start Interview", type="primary", disabled=selected.empty if selected is not None else True, on_click=start_interview)
 
+def display_chat_interface():
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
-else:
-    st.error(f"Failed to fetch data from the API. Status code: {jobs_endpoint_response.status_code}")
-    st.write("Response content:", jobs_endpoint_response.text)
+    job_selected = 'selected_id' in st.session_state
+
+    user_message = st.chat_input("Answer the question", disabled=not job_selected)
+
+    if user_message:
+        print("#############", st.session_state.selected_id, user_message)
+        update_chat(st.session_state.selected_id, user_message)
+
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.write(message["content"])
+
+def main():
+    init_page()
+
+    jobs_data = fetch_jobs_data(JOBS_ENDPOINT)
+    if jobs_data:
+        df = process_jobs_data(jobs_data)
+        display_jobs_grid(df)
+    else:
+        st.error(f"Failed to fetch data from the API.")
+        st.write("Response content:", jobs_data)
+
+    display_chat_interface()
+
+if __name__ == "__main__":
+    main()
 
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-did_user_select_job_id = 'selected_id' in globals()
-
-
-def submit_prompt():
-    print("#############", selected_id, user_message)
-    if selected_id:
-        append_messages_to_state_and_call_backend(selected_id, user_message)
-
-# user_message = st.chat_input("Answer the question", disabled=not did_user_select_job_id, on_submit=submit_prompt)
-user_message = st.chat_input("Answer the question", disabled=not did_user_select_job_id)
-
-if user_message:
-    submit_prompt()
-
-for ai_message in st.session_state.messages:
-    with st.chat_message(ai_message["role"]):
-        st.write(ai_message["content"])
-
-        
-st.write(st.session_state.messages)
-
-# streamlit run streamlit_app.py
+# streamlit run streamlit_app.py 
