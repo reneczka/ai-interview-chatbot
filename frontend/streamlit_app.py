@@ -2,7 +2,10 @@ import streamlit as st
 import pandas as pd
 from st_aggrid import AgGrid, GridOptionsBuilder
 from api_utils import fetch_jobs_data, send_message
-from config import JOBS_ENDPOINT, MESSAGE_ENDPOINT
+import os
+
+JOBS_ENDPOINT = os.getenv("JOBS_ENDPOINT")
+MESSAGE_ENDPOINT = os.getenv("MESSAGE_ENDPOINT")
 
 def init_page():
     st.set_page_config(layout="wide")
