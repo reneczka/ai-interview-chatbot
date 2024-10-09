@@ -1,8 +1,9 @@
 import requests
 
+
 def fetch_jobs_data(jobs_url):
     try:
-        response = requests.get(jobs_url)
+        response = requests.get(jobs_url, timeout=30)
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:

@@ -1,0 +1,33 @@
+⁠ # Ignore Python cache files
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore virtual environments
+venv/
+env/
+.venv/
+
+# Ignore log files
+*.log
+
+# Ignore environment variables file
+.env
+
+# Ignore version control directories
+.git/
+.gitignore
+
+# Ignore build artifacts
+build/
+dist/
+*.egg-info/
+
+# Ignore documentation (if not needed in the image)
+docs/
+
+# Ignore IDE/editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace

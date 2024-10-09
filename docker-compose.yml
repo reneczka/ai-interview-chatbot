@@ -16,10 +16,12 @@ services:
       context: ./frontend
     ports:
       - "8501:8501"
+    env_file:
+      - .env
     volumes:
       - ./frontend:/app
     depends_on:
       - backend
-    environment:
-      - JOBS_ENDPOINT=http://backend:8000/jobs
-      - MESSAGE_ENDPOINT=http://backend:8000/message
+
+
+
