@@ -1,6 +1,9 @@
 # AI Interview Chatbot
 
-This Python project is an AI-powered chatbot that conducts interviews using job data extracted from the Python Job Scraper. It leverages FastAPI for backend services and Streamlit for the frontend interface. The chatbot asks relevant technical questions, evaluates responses, and provides feedback to simulate a real job interview experience.
+This Python project is an AI-powered chatbot that conducts interviews using job data extracted from the Python Job Scraper app (my another project). It leverages FastAPI for backend services and Streamlit for the frontend interface. The chatbot asks relevant technical questions, evaluates responses, and provides feedback to simulate a real job interview experience.
+
+[Live demo](https://ai-interview-chatbot-frontend-latest.onrender.com) (note: please wait up to 1 minute for the cold start)
+
 
 ## Table of Contents
 
@@ -64,8 +67,7 @@ AI_INTERVIEW_CHATBOT/
 ### Prerequisites
 
 - Python 3.11
-- pip
-- Docker & Docker Compose
+- Docker & Docker Compose (for localhost)
 - PostgreSQL database instance
 - API Key from OpenAI
 
@@ -86,7 +88,7 @@ AI_INTERVIEW_CHATBOT/
 
    Use Docker Compose to build and run the containers:
 
-   ```sh
+   ```
    docker-compose up --build
    ```
 
@@ -120,7 +122,5 @@ AI_INTERVIEW_CHATBOT/
 - **Advanced Interview Scenarios**: Add different types of interview scenarios (e.g., behavioral, problem-solving).
 - **User Management**: Implement user authentication and management features.
 
-## All Done!
 
-You're good to go! This project offers an interactive experience for job candidates and can be expanded in the future to incorporate more features, such as integration with other job boards.
 
