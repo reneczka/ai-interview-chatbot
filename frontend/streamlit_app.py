@@ -67,10 +67,10 @@ def display_jobs_grid(df):
         selected_index = df.index[matching_rows].tolist()[0]
         st.session_state.selected_id = int(df.loc[selected_index, 'id'])
         
-        st.write(f"Selected Job ID: {st.session_state.selected_id}")
-        st.write(f"Selected Job Name: {selected_row['Job Name']}")
+        # st.write(f"Selected Job ID: {st.session_state.selected_id}")
+        # st.write(f"Selected Job Name: {selected_row['Job Name']}")
 
-    st.write("Selected:", selected)
+    st.write("You selected:", selected)
     st.button("Start Interview", type="primary", disabled=selected.empty if selected is not None else True, on_click=start_interview)
 
 def display_chat_interface():
