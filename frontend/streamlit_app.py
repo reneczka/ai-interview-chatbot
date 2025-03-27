@@ -16,7 +16,7 @@ def update_chat(job_id, user_msg):
     if user_msg:
         st.session_state.messages.append({"role": "user", "content": user_msg})
     response = send_message(MESSAGE_ENDPOINT, job_id, user_msg)
-    ai_messages = response["ai_messages"]
+    ai_messages = response.get("ai_messages", []) if response else []
     for ai_message in ai_messages:
         st.session_state.messages.append({"role": "assistant", "content": ai_message})
 

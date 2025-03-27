@@ -1,0 +1,25 @@
+{
+  "include": [
+    "."
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__"
+  ],
+  "ignore": [
+    "st_aggrid",
+    // "streamlit",
+    // "streamlit_app",
+    // "api_utils"
+  ],
+  "reportMissingImports": false,
+  "reportMissingModuleSource": false,
+  "reportMissingTypeStubs": false,
+  "reportImportCycles": false,
+  "reportGeneralTypeIssues": "information",
+  "reportFunctionMemberAccess": "information",
+  "reportMissingTypeArgument": "information",
+  "reportUnusedImport": "information",
+  "pythonVersion": "3.8",
+  "typeCheckingMode": "basic"
+} 
