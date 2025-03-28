@@ -3,9 +3,11 @@ import pandas as pd
 from st_aggrid import AgGrid, GridOptionsBuilder
 from api_utils import fetch_jobs_data, send_message, wake_up_server
 import os
+from streamlit.components.v1 import html
 
 JOBS_ENDPOINT = os.getenv("JOBS_ENDPOINT")
 MESSAGE_ENDPOINT = os.getenv("MESSAGE_ENDPOINT")
+BACKEND_URL = os.getenv("BACKEND_URL")
 
 def init_page():
     st.set_page_config(layout="wide")
@@ -89,25 +91,105 @@ def display_chat_interface():
         with st.chat_message(message["role"]):
             st.write(message["content"])
 
+def wake_up_server_browser():
+    """Uses JavaScript in the browser to wake up the Render.com server without displaying anything"""
+    
+    if "server_wake_attempted" not in st.session_state:
+        st.session_state.server_wake_attempted = True
+        
+        # Create JavaScript to make the wake-up request from the browser silently
+        js_code = f"""
+        <script>
+            // Track start time to enforce maximum wake-up time of 120 seconds
+            const startTime = Date.now();
+            const MAX_WAKE_TIME = 120000; // 120 seconds
+            const RETRY_INTERVAL = 15000; // 15 seconds
+            
+            // Silent function that just sends requests without UI updates
+            async function wakeUpServer(retryCount = 0) {{
+                // Check if we've exceeded the maximum time
+                const elapsedTime = Date.now() - startTime;
+                if (elapsedTime >= MAX_WAKE_TIME) {{
+                    console.log('Wake-up time limit reached');
+                    return;
+                }}
+                
+                try {{
+                    console.log('Attempting to wake up server');
+                    
+                    // Use a timeout to avoid hanging
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000);
+                    
+                    const response = await fetch('{BACKEND_URL}', {{
+                        method: 'GET',
+                        headers: {{
+                            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+                            'Accept': 'text/html,application/xhtml+xml,application/xml',
+                            'Accept-Language': 'en-US,en;q=0.9',
+                            'Cache-Control': 'no-cache',
+                        }},
+                        signal: controller.signal,
+                    }});
+                    
+                    clearTimeout(timeoutId);
+                    
+                    if (response.ok) {{
+                        console.log('Server is awake!');
+                        // Reload the app to use the now-awake server
+                        window.location.reload();
+                        return;
+                    }} 
+                    
+                    // For any response, schedule next retry if within time limit
+                    if (Date.now() - startTime < MAX_WAKE_TIME - RETRY_INTERVAL) {{
+                        setTimeout(() => wakeUpServer(retryCount + 1), RETRY_INTERVAL);
+                    }}
+                    
+                }} catch (error) {{
+                    console.error('Error waking up server:', error);
+                    
+                    // Schedule next retry if within time limit
+                    if (Date.now() - startTime < MAX_WAKE_TIME - RETRY_INTERVAL) {{
+                        setTimeout(() => wakeUpServer(retryCount + 1), RETRY_INTERVAL);
+                    }}
+                }}
+            }}
+            
+            // Start the wake-up process immediately
+            wakeUpServer();
+        </script>
+        """
+        
+        # Directly render the HTML component (no visible elements)
+        html(js_code, height=0)
+        return True
+    
+    return False
+
 def main():
     init_page()
 
-    # Wake up the server first
+    # Wake up the server using browser-based JavaScript (silently)
+    wake_up_server_browser()
+    
+    # Show loading state to the user while backend wakes up
     with st.spinner("Connecting to backend server..."):
         server_ready = wake_up_server()
     
-    if server_ready:
-        st.toast("Backend server is ready", icon="✅")
-    else:
-        st.warning("Could not connect to backend server.", icon="⚠️")
-
+    # Check for jobs data
     jobs_data = fetch_jobs_data(JOBS_ENDPOINT)
+    
+    # Display single status message based on server and data availability
+    if server_ready and jobs_data:
+        st.toast("Backend server is ready", icon="✅")
+    elif not jobs_data:
+        st.warning("Backend server is starting up. Please wait a few moments.", icon="⚠️")
+    
+    # Only proceed to display grid if we have data
     if jobs_data:
         df = process_jobs_data(jobs_data)
         display_jobs_grid(df)
-    else:
-        st.error(f"Failed to fetch data from the API.")
-        st.write("Response content:", jobs_data)
 
     display_chat_interface()
 
