@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from st_aggrid import AgGrid, GridOptionsBuilder
-from api_utils import fetch_jobs_data, send_message
+from api_utils import fetch_jobs_data, send_message, wake_up_server
 import os
 
 JOBS_ENDPOINT = os.getenv("JOBS_ENDPOINT")
@@ -91,6 +91,12 @@ def display_chat_interface():
 
 def main():
     init_page()
+
+    # Wake up the server first
+    if wake_up_server():
+        st.toast("Backend server is ready", icon="✅")
+    else:
+        st.warning("Trying to connect to backend server...", icon="⚠️")
 
     jobs_data = fetch_jobs_data(JOBS_ENDPOINT)
     if jobs_data:
