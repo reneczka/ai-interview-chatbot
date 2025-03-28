@@ -11,7 +11,7 @@ BACKEND_URL = os.getenv("BACKEND_URL")
 
 def init_page():
     st.set_page_config(layout="wide")
-    st.title("Jobs and Technologies Table")
+    st.title("AI Interview Chatbot")
     st.write("Select a job and click Start Interview button.")
 
 def update_chat(job_id, user_msg):
