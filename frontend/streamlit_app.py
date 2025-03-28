@@ -93,10 +93,13 @@ def main():
     init_page()
 
     # Wake up the server first
-    if wake_up_server():
+    with st.spinner("Connecting to backend server..."):
+        server_ready = wake_up_server()
+    
+    if server_ready:
         st.toast("Backend server is ready", icon="✅")
     else:
-        st.warning("Trying to connect to backend server...", icon="⚠️")
+        st.warning("Could not connect to backend server.", icon="⚠️")
 
     jobs_data = fetch_jobs_data(JOBS_ENDPOINT)
     if jobs_data:

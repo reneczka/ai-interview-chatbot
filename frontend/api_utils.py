@@ -1,6 +1,5 @@
 import requests
 import logging
-import streamlit as st
 import os
 
 # Configure logger for terminal output
@@ -20,8 +19,8 @@ def wake_up_server():
     """Send a request to the root endpoint to wake up the render.com server"""
     try:
         logger.info(f"Waking up server at: {BACKEND_URL}")
-        response = requests.get(BACKEND_URL or "", timeout=10)
-        return response.status_code == 200
+        response = requests.get(BACKEND_URL or "", timeout=120)
+        return response.status_code != 503
     except requests.RequestException as e:
         logger.warning(f"Wake-up request failed: {e}")
         return False
